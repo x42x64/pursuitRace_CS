@@ -56,32 +56,43 @@ namespace PursuitRaceCS
             this.buttonSerialConnect.Text = "Disconnect";
             this.toolStripStatusLabelConnectionStatus.Text = "Connected to Port " + this.comboBoxSerialPort.SelectedItem.ToString();
             this.buttonStart.Enabled = true;
+
+            this.buttonStart.Text = "Start";
             return true;
             
         }
 
         private void disconnect()
         {
+            stop();
             this.serialPort1.Close();
             this.buttonStart.Enabled = false;
             this.buttonSerialConnect.Text = "Connect";
             this.toolStripStatusLabelConnectionStatus.Text = "Disconnected";
-            this.timer1.Stop();
-            this.timerTicks = 0;
+            
         }
 
         private void go()
         {
             this.serialPort1.WriteLine("go");
             this.timerTicks = 0;
+            this.timerStart = DateTime.Now;
             this.timer1.Start();
+        }
+
+        private void stop()
+        {
+            this.serialPort1.WriteLine("stop");
+            this.timerTicks = 0;
+            this.timer1.Stop();
+            updateProgressBars();
         }
 
         private void setLanes(int[] laneTime_ms)
         {
             for(int i=0; i<laneTime_ms.Length; i++)
             {
-                this.serialPort1.WriteLine(String.Format("L%i:%i", i, laneTime_ms[i]));
+                this.serialPort1.WriteLine(String.Format("L{0}:{1}", i, laneTime_ms[i]));
             }
         }
 
@@ -209,16 +220,27 @@ namespace PursuitRaceCS
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            this.timerTicks = this.timerTicks + this.timer1.Interval;
+            //this.timerTicks = this.timerTicks + this.timer1.Interval;
+            this.timerTicks = (int)((DateTime.Now.Ticks - this.timerStart.Ticks)/10000);
 
+            updateProgressBars();
+
+            if(this.timerTicks > 65535)
+            {
+                this.timer1.Stop();
+            }
+        }
+
+        private void updateProgressBars()
+        {
             // progress bar 1
-            if(this.timerTicks>this.progressBar1.Maximum)
+            if (this.timerTicks > this.progressBar1.Maximum)
             {
                 this.progressBar1.Value = this.progressBar1.Maximum;
                 this.panel1.BackColor = Color.Green;
             }
-            else 
-            { 
+            else
+            {
                 this.progressBar1.Value = this.timerTicks;
                 this.panel1.BackColor = Color.Red;
             }
@@ -282,16 +304,20 @@ namespace PursuitRaceCS
                 this.progressBar6.Value = this.timerTicks;
                 this.panel6.BackColor = Color.Red;
             }
-
-            if(this.timerTicks > 65535)
-            {
-                this.timer1.Stop();
-            }
         }
 
         private void buttonStart_Click(object sender, EventArgs e)
         {
-            go();
+            if (this.buttonStart.Text == "Start")
+            {
+                go();
+                this.buttonStart.Text = "Abbruch";
+            }
+            else 
+            {
+                stop();
+                this.buttonStart.Text = "Start";
+            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -302,6 +328,14 @@ namespace PursuitRaceCS
         private void überToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MessageBox.Show("PursuitRace v1.0beta\n (c) Jan Martin \n SV Hengersberg");
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (this.serialPort1.IsOpen)
+            {
+                disconnect();
+            }
         }
      
 
