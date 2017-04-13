@@ -82,7 +82,12 @@ namespace PursuitRaceCS
 
         private void stop()
         {
-            this.serialPort1.WriteLine("stop");
+            try
+            {
+                this.serialPort1.WriteLine("stop");
+            }
+            catch (Exception e)
+            { }
             this.timerTicks = 0;
             this.timer1.Stop();
             updateProgressBars();
@@ -126,7 +131,10 @@ namespace PursuitRaceCS
                 if(laneStartTime_ms[i]>65535)
                 {
                     laneStartTime_ms[i] = 65535;
-                    MessageBox.Show("Bahn " + i.ToString() + " hat eine Wartezeit > 65s. Das System kann maximal 65s darstellen. Die Wartezeit wird auf 65s gekürzt.");
+                    if (laneBaseTime_ms[i] != -1)
+                    {
+                        MessageBox.Show("Bahn " + (i+1).ToString() + " hat eine Wartezeit > 65s. Das System kann maximal 65s darstellen. Die Wartezeit wird auf 65s gekürzt.");
+                    }
                 }
                 if(laneBaseTime_ms[i] < 0)
                 {
